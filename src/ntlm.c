@@ -1345,19 +1345,6 @@ int ntlm_decode_auth_msg(struct ntlm_ctx *ctx,
         size_t mic_offs = payload_offs;
 
         if (mic->length < 16) return ERR_DECODE;
-
-        if ((neg_flags & NTLMSSP_NEGOTIATE_VERSION) == 0) {
-            struct wire_version zver = {0};
-            /* mic is at payload_offs right now, but this offset may be
-             * wrongly reduced for compatibility with older clients,
-             * if all bytes are zeroed, then it means there was an actual
-             * empty version struct */
-            if (memcmp(&msg->version, &zver,
-                       sizeof(struct wire_version)) == 0) {
-                mic_offs += sizeof(struct wire_version);
-            }
-        }
-
         if (buffer->length - mic_offs < 16) return ERR_DECODE;
         memcpy(mic->data, &buffer->data[mic_offs], 16);
     }

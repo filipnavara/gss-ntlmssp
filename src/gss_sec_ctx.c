@@ -686,6 +686,21 @@ uint32_t gssntlm_accept_sec_context(uint32_t *minor_status,
 
             /* leave only the crossing between requested and allowed flags */
             ctx->neg_flags &= in_flags;
+
+            /* Older versions of gss-ntlmssp incorrectly generated MIC at wrong
+             * offset unless NTLMSSP_NEGOTIATE_VERSION is negotiated. If the
+             * client specified flags that could result in MIC being generated
+             * then unilaterally add the NTLMSSP_NEGOTIATE_VERSION flag
+             * to force older clients to include the wire_version field and
+             * thus put the MIC at the correct offset if it's generated.
+             *
+             * Note that the Windows Server 2022 also unilaterally adds this
+             * flag in a similar manner.
+             */
+            if ((ctx->neg_flags & NTLMSSP_NEGOTIATE_NTLM) &&
+                (ctx->neg_flags & (NTLMSSP_NEGOTIATE_SIGN | NTLMSSP_NEGOTIATE_SEAL))) {
+                ctx->neg_flags |= NTLMSSP_NEGOTIATE_VERSION;
+            }
         } else {
             /* If there is no negotiate message set datagram mode */
             ctx->neg_flags |= NTLMSSP_NEGOTIATE_DATAGRAM | \
